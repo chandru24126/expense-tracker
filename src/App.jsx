@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import Auth from './Auth'
 
@@ -16,15 +16,15 @@ const fmt  = n => '₹' + Number(n).toLocaleString('en-IN', { maximumFractionDig
 const fmtD = d => new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })
 
 export default function App() {
-  const [session,  setSession]  = useState(null)
-  const [expenses, setExpenses] = useState([])
-  const [loading,  setLoading]  = useState(true)
-  const [view,     setView]     = useState('dashboard')
-  const [modal,    setModal]    = useState(false)
-  const [editing,  setEditing]  = useState(null)
+  const [session,     setSession]     = useState(null)
+  const [expenses,    setExpenses]    = useState([])
+  const [loading,     setLoading]     = useState(true)
+  const [view,        setView]        = useState('dashboard')
+  const [modal,       setModal]       = useState(false)
+  const [editing,     setEditing]     = useState(null)
   const [filterCat,   setFilterCat]   = useState('')
   const [filterMonth, setFilterMonth] = useState(() => new Date().toISOString().slice(0,7))
-  const [search,   setSearch]   = useState('')
+  const [search,      setSearch]      = useState('')
   const [form, setForm] = useState({ amount:'', category:'food', description:'', date: new Date().toISOString().slice(0,10) })
   const [toast, setToast] = useState('')
 
@@ -90,52 +90,180 @@ export default function App() {
   const filtered   = expenses.filter(e => (!filterCat||e.category===filterCat) && e.date.startsWith(filterMonth) && (!search||e.description?.toLowerCase().includes(search.toLowerCase()))).sort((a,b)=>b.date.localeCompare(a.date))
 
   const s = {
-    app:   { minHeight:'100vh', background:'#0a0f1e', color:'#e2e8f0', fontFamily:"'DM Sans',sans-serif" },
-    hdr:   { background:'#0d1424', borderBottom:'1px solid #1e293b', padding:'0 20px', display:'flex', alignItems:'center', gap:'10px', height:'58px', position:'sticky', top:0, zIndex:50 },
-    logo:  { fontSize:'17px', fontWeight:'700', color:'#10b981', letterSpacing:'-0.3px', marginRight:'auto', fontFamily:'Georgia,serif' },
-    navBtn:a => ({ background: a?'#10b981':'transparent', color: a?'#fff':'#64748b', border:'none', borderRadius:'8px', padding:'6px 15px', cursor:'pointer', fontSize:'13px', fontWeight:'500' }),
-    addBtn:{ background:'#10b981', color:'#fff', border:'none', borderRadius:'9px', padding:'8px 18px', cursor:'pointer', fontSize:'13px', fontWeight:'600' },
-    main:  { maxWidth:'920px', margin:'0 auto', padding:'20px 16px 40px' },
-    card:  { background:'#0d1424', borderRadius:'14px', padding:'20px', border:'1px solid #1e293b', marginBottom:'16px' },
-    row:   { display:'flex', alignItems:'center', gap:'12px', padding:'10px 0', borderBottom:'1px solid #1e293b' },
     input: { width:'100%', background:'#111827', border:'1px solid #1e293b', borderRadius:'8px', padding:'9px 12px', color:'#f1f5f9', fontSize:'14px', boxSizing:'border-box', fontFamily:'inherit', outline:'none' },
+    card:  { background:'#0d1424', borderRadius:'14px', padding:'20px', border:'1px solid #1e293b', marginBottom:'16px' },
+    row:   { display:'flex', alignItems:'center', gap:'10px', padding:'10px 0', borderBottom:'1px solid #1e293b' },
     lbl:   { fontSize:'11px', color:'#64748b', display:'block', marginBottom:'4px', fontWeight:'500' },
+    addBtn:{ background:'#10b981', color:'#fff', border:'none', borderRadius:'9px', padding:'8px 14px', cursor:'pointer', fontSize:'13px', fontWeight:'600', whiteSpace:'nowrap' },
   }
 
   return (
     <>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500;600&display=swap'); input[type=month],input[type=date],select{color-scheme:dark}`}</style>
-      <div style={s.app}>
-        <header style={s.hdr}>
-          <div style={s.logo}>₹ Expenso</div>
-          <button style={s.navBtn(view==='dashboard')} onClick={()=>setView('dashboard')}>Dashboard</button>
-          <button style={s.navBtn(view==='expenses')}  onClick={()=>setView('expenses')}>All Expenses</button>
-          <input type="month" value={filterMonth} onChange={e=>setFilterMonth(e.target.value)}
-            style={{ ...s.input, width:'140px', fontSize:'12px' }} />
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500;600&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { overflow-x: hidden; }
+        input[type=month], input[type=date], select { color-scheme: dark; }
+
+        /* ── Header ── */
+        .hdr {
+          background: #0d1424;
+          border-bottom: 1px solid #1e293b;
+          padding: 10px 16px;
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 8px;
+          position: sticky;
+          top: 0;
+          z-index: 50;
+        }
+        .logo {
+          font-size: 17px;
+          font-weight: 700;
+          color: #10b981;
+          font-family: Georgia, serif;
+          margin-right: auto;
+        }
+        .nav-btn {
+          border: none;
+          border-radius: 8px;
+          padding: 6px 12px;
+          cursor: pointer;
+          font-size: 13px;
+          font-weight: 500;
+        }
+        .month-input {
+          background: #111827;
+          border: 1px solid #1e293b;
+          border-radius: 8px;
+          padding: 6px 10px;
+          color: #f1f5f9;
+          font-size: 12px;
+          outline: none;
+          width: 130px;
+        }
+        .logout-btn {
+          background: none;
+          border: 1px solid #1e293b;
+          border-radius: 8px;
+          padding: 6px 10px;
+          color: #475569;
+          cursor: pointer;
+          font-size: 12px;
+        }
+
+        /* ── Stats grid ── */
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 10px;
+          margin-bottom: 16px;
+        }
+        @media (max-width: 480px) {
+          .stats-grid {
+            grid-template-columns: 1fr 1fr;
+          }
+          .month-input { width: 110px; }
+        }
+
+        /* ── Stat card ── */
+        .stat-card {
+          background: #0d1424;
+          border-radius: 12px;
+          padding: 14px;
+          border: 1px solid #1e293b;
+        }
+        .stat-lbl {
+          font-size: 9px;
+          color: #475569;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          margin-bottom: 6px;
+        }
+        .stat-val {
+          font-size: 18px;
+          font-weight: 600;
+          font-family: 'DM Mono', monospace;
+          color: #f1f5f9;
+        }
+        @media (max-width: 360px) {
+          .stat-val { font-size: 15px; }
+        }
+
+        /* ── Main ── */
+        .main {
+          max-width: 920px;
+          margin: 0 auto;
+          padding: 16px 12px 40px;
+        }
+
+        /* ── Transaction row ── */
+        .t-desc {
+          font-size: 13px;
+          color: #e2e8f0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          max-width: 180px;
+        }
+        @media (max-width: 400px) {
+          .t-desc { max-width: 120px; }
+        }
+
+        /* ── Filter row ── */
+        .filter-row {
+          display: flex;
+          gap: 10px;
+          margin-bottom: 18px;
+          flex-wrap: wrap;
+        }
+
+        /* ── Footer ── */
+        .footer {
+          border-top: 1px solid #1e293b;
+          padding: 24px 16px;
+          text-align: center;
+        }
+      `}</style>
+
+      <div style={{ minHeight:'100vh', background:'#0a0f1e', color:'#e2e8f0', fontFamily:"'DM Sans',sans-serif", overflowX:'hidden' }}>
+
+        {/* ── Header ── */}
+        <header className="hdr">
+          <div className="logo">₹ Expenso</div>
+          <button className="nav-btn"
+            style={{ background: view==='dashboard'?'#10b981':'transparent', color: view==='dashboard'?'#fff':'#64748b' }}
+            onClick={()=>setView('dashboard')}>Dashboard</button>
+          <button className="nav-btn"
+            style={{ background: view==='expenses'?'#10b981':'transparent', color: view==='expenses'?'#fff':'#64748b' }}
+            onClick={()=>setView('expenses')}>Expenses</button>
+          <input type="month" value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} className="month-input" />
           <button style={s.addBtn} onClick={openAdd}>+ Add</button>
-          <button onClick={handleLogout}
-            style={{ background:'none', border:'1px solid #1e293b', borderRadius:'8px', padding:'6px 12px', color:'#475569', cursor:'pointer', fontSize:'12px' }}>
-            Logout
-          </button>
+          <button className="logout-btn" onClick={handleLogout}>Logout</button>
         </header>
 
-        <main style={s.main}>
+        {/* ── Main ── */}
+        <main className="main">
           {loading ? (
-            <div style={{ textAlign:'center', color:'#334155', padding:'60px' }}>Loading your expenses…</div>
+            <div style={{ textAlign:'center', color:'#334155', padding:'60px' }}>Loading…</div>
           ) : view === 'dashboard' ? (
             <>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'12px', marginBottom:'16px' }}>
+              {/* Stats */}
+              <div className="stats-grid">
                 {[
                   { l:'Month Total',   v: fmt(monthTotal) },
                   { l:'Transactions',  v: monthExps.length },
                   { l:'Top Category',  v: catTotals[0]?.label?.split(' ')[0] || '—' },
                 ].map((c,i) => (
-                  <div key={i} style={{ ...s.card, marginBottom:0 }}>
-                    <div style={{ fontSize:'10px', color:'#475569', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'6px' }}>{c.l}</div>
-                    <div style={{ fontSize:'21px', fontWeight:'600', fontFamily:"'DM Mono',monospace", color:'#f1f5f9' }}>{c.v}</div>
+                  <div key={i} className="stat-card">
+                    <div className="stat-lbl">{c.l}</div>
+                    <div className="stat-val" style={{ fontSize: i===2?'15px':'18px' }}>{c.v}</div>
                   </div>
                 ))}
               </div>
+
+              {/* Recent Transactions */}
               <div style={s.card}>
                 <div style={{ fontSize:'11px', fontWeight:'600', color:'#475569', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'14px' }}>Recent Transactions</div>
                 {monthExps.length === 0 ? (
@@ -147,29 +275,31 @@ export default function App() {
                   const cat = CAT_MAP[e.category] || CATS[6]
                   return (
                     <div key={e.id} style={s.row}>
-                      <div style={{ width:'34px',height:'34px',borderRadius:'9px',background:cat.color+'1a',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}>
-                        <div style={{ width:'8px',height:'8px',borderRadius:'50%',background:cat.color }} />
+                      <div style={{ width:'32px', height:'32px', borderRadius:'9px', background:cat.color+'1a', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                        <div style={{ width:'7px', height:'7px', borderRadius:'50%', background:cat.color }} />
                       </div>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:'13px',color:'#e2e8f0',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{e.description}</div>
-                        <div style={{ fontSize:'11px',color:'#475569' }}>{cat.label} · {fmtD(e.date)}</div>
+                        <div className="t-desc">{e.description}</div>
+                        <div style={{ fontSize:'11px', color:'#475569' }}>{cat.label} · {fmtD(e.date)}</div>
                       </div>
-                      <div style={{ fontFamily:"'DM Mono',monospace",fontSize:'14px',fontWeight:'600',color:'#f87171' }}>{fmt(e.amount)}</div>
+                      <div style={{ fontFamily:"'DM Mono',monospace", fontSize:'13px', fontWeight:'600', color:'#f87171', flexShrink:0 }}>{fmt(e.amount)}</div>
                     </div>
                   )
                 })}
               </div>
+
+              {/* Category Breakdown */}
               {catTotals.length > 0 && (
                 <div style={s.card}>
-                  <div style={{ fontSize:'11px',fontWeight:'600',color:'#475569',textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:'14px' }}>By Category</div>
+                  <div style={{ fontSize:'11px', fontWeight:'600', color:'#475569', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'14px' }}>By Category</div>
                   {catTotals.map(c => (
-                    <div key={c.id} style={{ display:'flex',alignItems:'center',gap:'12px',marginBottom:'10px' }}>
-                      <div style={{ width:'8px',height:'8px',borderRadius:'50%',background:c.color,flexShrink:0 }} />
-                      <div style={{ flex:1,fontSize:'13px',color:'#94a3b8' }}>{c.label}</div>
-                      <div style={{ width:'120px',height:'6px',background:'#1e293b',borderRadius:'4px',overflow:'hidden' }}>
-                        <div style={{ height:'100%',background:c.color,width:`${(c.value/monthTotal*100).toFixed(0)}%`,borderRadius:'4px' }} />
+                    <div key={c.id} style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'10px' }}>
+                      <div style={{ width:'7px', height:'7px', borderRadius:'50%', background:c.color, flexShrink:0 }} />
+                      <div style={{ flex:1, fontSize:'12px', color:'#94a3b8', minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.label}</div>
+                      <div style={{ width:'80px', height:'5px', background:'#1e293b', borderRadius:'4px', overflow:'hidden', flexShrink:0 }}>
+                        <div style={{ height:'100%', background:c.color, width:`${(c.value/monthTotal*100).toFixed(0)}%`, borderRadius:'4px' }} />
                       </div>
-                      <div style={{ fontFamily:"'DM Mono',monospace",fontSize:'12px',color:'#e2e8f0',width:'64px',textAlign:'right' }}>{fmt(c.value)}</div>
+                      <div style={{ fontFamily:"'DM Mono',monospace", fontSize:'12px', color:'#e2e8f0', width:'60px', textAlign:'right', flexShrink:0 }}>{fmt(c.value)}</div>
                     </div>
                   ))}
                 </div>
@@ -177,31 +307,35 @@ export default function App() {
             </>
           ) : (
             <div style={s.card}>
-              <div style={{ display:'flex',gap:'10px',marginBottom:'18px',flexWrap:'wrap' }}>
-                <input placeholder="Search…" value={search} onChange={e=>setSearch(e.target.value)} style={{ ...s.input,flex:1,minWidth:'160px' }} />
-                <select value={filterCat} onChange={e=>setFilterCat(e.target.value)} style={{ ...s.input,width:'170px',cursor:'pointer' }}>
+              <div className="filter-row">
+                <input placeholder="Search…" value={search} onChange={e=>setSearch(e.target.value)}
+                  style={{ ...s.input, flex:1, minWidth:'140px' }} />
+                <select value={filterCat} onChange={e=>setFilterCat(e.target.value)}
+                  style={{ ...s.input, width:'100%', cursor:'pointer' }}>
                   <option value="">All categories</option>
                   {CATS.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                 </select>
               </div>
-              <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'12px' }}>
-                <div style={{ fontSize:'11px',fontWeight:'600',color:'#475569',textTransform:'uppercase',letterSpacing:'0.1em' }}>{filtered.length} transactions</div>
-                <div style={{ fontFamily:"'DM Mono',monospace",fontSize:'14px',color:'#10b981',fontWeight:'600' }}>{fmt(filtered.reduce((s,e)=>s+e.amount,0))}</div>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px' }}>
+                <div style={{ fontSize:'11px', fontWeight:'600', color:'#475569', textTransform:'uppercase', letterSpacing:'0.1em' }}>{filtered.length} transactions</div>
+                <div style={{ fontFamily:"'DM Mono',monospace", fontSize:'13px', color:'#10b981', fontWeight:'600' }}>{fmt(filtered.reduce((s,e)=>s+e.amount,0))}</div>
               </div>
-              {filtered.map(e => {
+              {filtered.length === 0 ? (
+                <div style={{ textAlign:'center', color:'#334155', padding:'40px 0' }}>No matching expenses</div>
+              ) : filtered.map(e => {
                 const cat = CAT_MAP[e.category] || CATS[6]
                 return (
                   <div key={e.id} style={s.row}>
-                    <div style={{ width:'34px',height:'34px',borderRadius:'9px',background:cat.color+'1a',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}>
-                      <div style={{ width:'8px',height:'8px',borderRadius:'50%',background:cat.color }} />
+                    <div style={{ width:'32px', height:'32px', borderRadius:'9px', background:cat.color+'1a', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                      <div style={{ width:'7px', height:'7px', borderRadius:'50%', background:cat.color }} />
                     </div>
-                    <div style={{ flex:1,minWidth:0 }}>
-                      <div style={{ fontSize:'13px',color:'#e2e8f0',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{e.description}</div>
-                      <div style={{ fontSize:'11px',color:'#475569' }}>{cat.label} · {fmtD(e.date)}</div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div className="t-desc">{e.description}</div>
+                      <div style={{ fontSize:'11px', color:'#475569' }}>{cat.label} · {fmtD(e.date)}</div>
                     </div>
-                    <div style={{ fontFamily:"'DM Mono',monospace",fontSize:'14px',fontWeight:'600',color:'#f87171',flexShrink:0,marginRight:'4px' }}>{fmt(e.amount)}</div>
-                    <button onClick={()=>openEdit(e)} style={{ background:'none',border:'1px solid #1e3a2f',borderRadius:'6px',cursor:'pointer',color:'#10b981',fontSize:'12px',padding:'4px 10px' }}>Edit</button>
-                    <button onClick={()=>handleDelete(e.id)} style={{ background:'none',border:'none',cursor:'pointer',color:'#374151',fontSize:'16px',padding:'4px 6px',lineHeight:1 }}>✕</button>
+                    <div style={{ fontFamily:"'DM Mono',monospace", fontSize:'13px', fontWeight:'600', color:'#f87171', flexShrink:0, marginRight:'4px' }}>{fmt(e.amount)}</div>
+                    <button onClick={()=>openEdit(e)} style={{ background:'none', border:'1px solid #1e3a2f', borderRadius:'6px', cursor:'pointer', color:'#10b981', fontSize:'11px', padding:'4px 8px', flexShrink:0 }}>Edit</button>
+                    <button onClick={()=>handleDelete(e.id)} style={{ background:'none', border:'none', cursor:'pointer', color:'#374151', fontSize:'16px', padding:'4px', flexShrink:0 }}>✕</button>
                   </div>
                 )
               })}
@@ -210,20 +344,16 @@ export default function App() {
         </main>
 
         {/* ── Footer ── */}
-        <footer style={{ borderTop:'1px solid #1e293b', padding:'24px 20px', textAlign:'center' }}>
-          <p style={{ margin:'0 0 12px', fontSize:'13px', color:'#475569' }}>
+        <footer className="footer">
+          <p style={{ marginBottom:'12px', fontSize:'13px', color:'#475569' }}>
             Designed & Developed by{' '}
             <span style={{ color:'#10b981', fontWeight:'600' }}>Chandru SK</span>
             {' '}· B.Tech CSE
           </p>
-          <a
-            href="https://www.linkedin.com/in/chandru-sk-999077384/"
-            target="_blank"
-            rel="noopener noreferrer"
+          <a href="https://www.linkedin.com/in/chandru-sk-999077384/" target="_blank" rel="noopener noreferrer"
             style={{ display:'inline-flex', alignItems:'center', gap:'7px', textDecoration:'none',
-              background:'#0a66c2', color:'#fff', padding:'8px 18px',
-              borderRadius:'8px', fontSize:'13px', fontWeight:'600' }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+              background:'#0a66c2', color:'#fff', padding:'8px 18px', borderRadius:'8px', fontSize:'13px', fontWeight:'600' }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="white">
               <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
             </svg>
             Connect on LinkedIn
@@ -232,41 +362,43 @@ export default function App() {
 
       </div>
 
+      {/* ── Modal ── */}
       {modal && (
-        <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:100,padding:'16px' }}
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.8)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100, padding:'16px' }}
           onClick={e=>e.target===e.currentTarget&&setModal(false)}>
-          <div style={{ background:'#0d1424',borderRadius:'18px',padding:'28px 24px',width:'400px',maxWidth:'100%',border:'1px solid #1e293b' }}>
-            <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'22px' }}>
-              <h2 style={{ margin:0,fontSize:'17px',fontWeight:'600',fontFamily:'Georgia,serif' }}>{editing?'Edit Expense':'New Expense'}</h2>
-              <button onClick={()=>setModal(false)} style={{ background:'none',border:'none',color:'#475569',cursor:'pointer',fontSize:'22px',lineHeight:1 }}>×</button>
+          <div style={{ background:'#0d1424', borderRadius:'18px', padding:'24px 20px', width:'100%', maxWidth:'400px', border:'1px solid #1e293b' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px' }}>
+              <h2 style={{ margin:0, fontSize:'17px', fontWeight:'600', fontFamily:'Georgia,serif', color:'#f1f5f9' }}>{editing?'Edit Expense':'New Expense'}</h2>
+              <button onClick={()=>setModal(false)} style={{ background:'none', border:'none', color:'#475569', cursor:'pointer', fontSize:'22px', lineHeight:1 }}>×</button>
             </div>
             <label style={s.lbl}>Amount (₹) *</label>
             <input type="number" min="0" step="0.01" placeholder="0.00" value={form.amount}
               onChange={e=>setForm(f=>({...f,amount:e.target.value}))}
-              style={{ ...s.input,marginBottom:'14px',fontFamily:"'DM Mono',monospace",fontSize:'20px',fontWeight:'600' }} autoFocus />
+              style={{ ...s.input, marginBottom:'14px', fontFamily:"'DM Mono',monospace", fontSize:'20px', fontWeight:'600' }} autoFocus />
             <label style={s.lbl}>Category</label>
             <select value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}
-              style={{ ...s.input,marginBottom:'14px',cursor:'pointer' }}>
+              style={{ ...s.input, marginBottom:'14px', cursor:'pointer' }}>
               {CATS.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}
             </select>
             <label style={s.lbl}>Description</label>
             <input type="text" placeholder="What did you spend on?" value={form.description}
               onChange={e=>setForm(f=>({...f,description:e.target.value}))}
-              style={{ ...s.input,marginBottom:'14px' }} />
+              style={{ ...s.input, marginBottom:'14px' }} />
             <label style={s.lbl}>Date</label>
             <input type="date" value={form.date}
               onChange={e=>setForm(f=>({...f,date:e.target.value}))}
-              style={{ ...s.input,marginBottom:'22px' }} />
-            <div style={{ display:'flex',gap:'10px' }}>
-              <button onClick={()=>setModal(false)} style={{ flex:1,background:'#1e293b',border:'none',borderRadius:'10px',padding:'11px',color:'#94a3b8',cursor:'pointer',fontSize:'14px' }}>Cancel</button>
-              <button onClick={handleSubmit} style={{ flex:1,background:'#10b981',border:'none',borderRadius:'10px',padding:'11px',color:'#fff',cursor:'pointer',fontSize:'14px',fontWeight:'600' }}>{editing?'Update':'Add Expense'}</button>
+              style={{ ...s.input, marginBottom:'22px' }} />
+            <div style={{ display:'flex', gap:'10px' }}>
+              <button onClick={()=>setModal(false)} style={{ flex:1, background:'#1e293b', border:'none', borderRadius:'10px', padding:'11px', color:'#94a3b8', cursor:'pointer', fontSize:'14px' }}>Cancel</button>
+              <button onClick={handleSubmit} style={{ flex:1, background:'#10b981', border:'none', borderRadius:'10px', padding:'11px', color:'#fff', cursor:'pointer', fontSize:'14px', fontWeight:'600' }}>{editing?'Update':'Add Expense'}</button>
             </div>
           </div>
         </div>
       )}
 
+      {/* ── Toast ── */}
       {toast && (
-        <div style={{ position:'fixed',bottom:'24px',left:'50%',transform:'translateX(-50%)',background:'#10b981',color:'#fff',padding:'10px 22px',borderRadius:'30px',fontSize:'13px',fontWeight:'500',zIndex:200 }}>
+        <div style={{ position:'fixed', bottom:'24px', left:'50%', transform:'translateX(-50%)', background:'#10b981', color:'#fff', padding:'10px 22px', borderRadius:'30px', fontSize:'13px', fontWeight:'500', zIndex:200, whiteSpace:'nowrap' }}>
           {toast}
         </div>
       )}
