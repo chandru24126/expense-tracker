@@ -347,10 +347,10 @@ export default function App() {
         <footer className="footer">
           <p style={{ marginBottom:'12px', fontSize:'13px', color:'#475569' }}>
             Designed & Developed by{' '}
-            <span style={{ color:'#10b981', fontWeight:'600' }}>Chandru SK</span>
-            {' '}· B.Tech CSE
+            <span style={{ color:'#10b981', fontWeight:'600' }}>Nandhini S</span>
+            {' '}· B.Tech IT
           </p>
-          <a href="https://www.linkedin.com/in/chandru-sk-999077384/" target="_blank" rel="noopener noreferrer"
+          <a href="https://www.linkedin.com/in/nandhini-s-8565a032a?utm_source=share_via&utm_content=profile&utm_medium=member_android" target="_blank" rel="noopener noreferrer"
             style={{ display:'inline-flex', alignItems:'center', gap:'7px', textDecoration:'none',
               background:'#0a66c2', color:'#fff', padding:'8px 18px', borderRadius:'8px', fontSize:'13px', fontWeight:'600' }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="white">
