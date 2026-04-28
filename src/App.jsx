@@ -350,6 +350,7 @@ export default function App() {
             <span style={{ color:'#10b981', fontWeight:'600' }}>Chandru SK</span>
             {' '}· B.Tech CSE
           </p>
+          <p style="margin: 0 0 10px 0; font-size: 14px; color: #cccccc;">Contact us : 8098585071 for any feedback & bug</p>
   <a href="https://www.linkedin.com/in/chandru-sk-999077384/"
   target="_blank"
   rel="noopener noreferrer"
@@ -361,7 +362,6 @@ export default function App() {
   </svg>
   Connect on LinkedIn
 </a>
-<p style="margin: 0 0 10px 0; font-size: 14px; color: #cccccc;">Contact us : 8098585071 for any feedback & bug</p>
         
         </footer>
 
