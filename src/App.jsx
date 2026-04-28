@@ -361,6 +361,7 @@ export default function App() {
   </svg>
   Connect on LinkedIn
 </a>
+<p style="margin: 0 0 10px 0; font-size: 14px; color: #cccccc;">Contact us : 8098585071 for any feedback & bug</p>
         
         </footer>
 
